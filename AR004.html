@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Model AR Viewer | 11m Scale Optimized</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2d3b8c, #4a5fc1);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .upload-section, .preview-section {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .preview-container {
+            width: 100%;
+            height: 300px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .preview-placeholder {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .preview-placeholder i {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .ar-button {
+            background: linear-gradient(45deg, #FF416C, #FF4B2B);
+        }
+
+        .ar-button:hover {
+            background: linear-gradient(45deg, #ff2b5e, #ff3514);
+        }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .instructions h2 {
+            margin-bottom: 15px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            line-height: 1.6;
+        }
+
+        .instructions li {
+            margin-bottom: 10px;
+        }
+
+        .ar-viewer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            z-index: 1000;
+            display: none;
+        }
+
+        .close-ar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.5rem;
+            z-index: 1001;
+            cursor: pointer;
+        }
+
+        .model-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        .conversion-status {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            display: none;
+        }
+
+        .status-processing {
+            background: rgba(255, 165, 0, 0.2);
+            border-left: 4px solid orange;
+        }
+
+        .status-success {
+            background: rgba(0, 255, 0, 0.2);
+            border-left: 4px solid green;
+        }
+
+        .status-error {
+            background: rgba(255, 0, 0, 0.2);
+            border-left: 4px solid red;
+        }
+
+        .file-format-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .format-badge {
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .format-badge.primary {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .inventor-note {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 193, 7, 0.2);
+            border-radius: 8px;
+            border-left: 4px solid #FFC107;
+        }
+
+        .scale-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(33, 150, 243, 0.2);
+            border-radius: 8px;
+            border-left: 4px solid #2196F3;
+        }
+
+        .ar-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            z-index: 1001;
+        }
+
+        .scale-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .scale-slider {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .scale-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>3D Model AR Viewer</h1>
+            <p class="subtitle">Upload 3D models and visualize them in AR at 11m scale</p>
+        </header>
+
+        <div class="main-content">
+            <div class="upload-section">
+                <h2 class="section-title">Upload 3D Model</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <p>Click to upload or drag and drop</p>
+                    <p class="file-types">Supported formats: .gltf, .glb, .stl, .obj</p>
+                    <input type="file" id="fileInput" class="file-input" accept=".gltf,.glb,.stl,.obj">
+                </div>
+                
+                <div class="file-format-info">
+                    <div class="format-badge">GLTF (.gltf)</div>
+                    <div class="format-badge">GLB (.glb)</div>
+                    <div class="format-badge">STL (.stl)</div>
+                    <div class="format-badge">OBJ (.obj)</div>
+                </div>
+                
+                <div class="scale-info">
+                    <strong>11m Scale Optimized:</strong> Models are automatically scaled to fit within an 11-meter bounding box for optimal AR viewing of large objects.
+                </div>
+                
+                <div class="conversion-status" id="conversionStatus">
+                    <div id="statusMessage">Processing file...</div>
+                    <div class="progress-bar">
+                        <div class="progress" id="conversionProgress"></div>
+                    </div>
+                </div>
+                
+                <div class="model-info" id="modelInfo" style="display: none;">
+                    <h3>Model Information</h3>
+                    <p id="modelName">Model: <span></span></p>
+                    <p id="modelSize">Size: <span></span></p>
+                    <p id="modelType">Type: <span></span></p>
+                    <p id="modelDimensions">Dimensions: <span></span></p>
+                    
+                    <div class="scale-control">
+                        <label for="scaleSlider">AR Scale:</label>
+                        <input type="range" id="scaleSlider" class="scale-slider" min="0.1" max="2.0" step="0.1" value="1.0">
+                        <span id="scaleValue">1.0x</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="preview-section">
+                <h2 class="section-title">3D Preview</h2>
+                <div class="preview-container" id="previewContainer">
+                    <div class="preview-placeholder" id="previewPlaceholder">
+                        <i>🔄</i>
+                        <p>Upload a model to preview</p>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button id="resetView">Reset View</button>
+                    <button class="ar-button" id="viewInAR">View in AR (11m Scale)</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h2>How to Use</h2>
+            <ol>
+                <li>Upload a 3D model in GLTF, GLB, STL, or OBJ format</li>
+                <li>Preview your model in the 3D viewer - you can rotate and zoom</li>
+                <li>Adjust the AR scale if needed using the slider</li>
+                <li>Click "View in AR" to see your model in augmented reality at 11m scale</li>
+                <li>For AR viewing, point your camera at a flat surface with good lighting</li>
+                <li>Move around to see your model from different angles</li>
+            </ol>
+            
+            <h2 style="margin-top: 20px;">About the 11m Scale</h2>
+            <p>This viewer is optimized for large-scale models up to 11 meters in size. This is ideal for:</p>
+            <ul>
+                <li>Architectural models and buildings</li>
+                <li>Industrial equipment and machinery</li>
+                <li>Vehicles and large objects</li>
+                <li>Environmental designs and layouts</li>
+            </ul>
+            <p>The scale slider allows you to adjust the size from 10% to 200% of the optimized 11m scale.</p>
+        </div>
+    </div>
+
+    <div class="ar-viewer" id="arViewer">
+        <button class="close-ar" id="closeAR">✕</button>
+        <div class="ar-controls">
+            <button id="arScaleDown">-</button>
+            <button id="arScaleReset">Reset Scale</button>
+            <button id="arScaleUp">+</button>
+        </div>
+        <a-scene 
+            embedded 
+            arjs="sourceType: webcam; debugUIEnabled: false;"
+            renderer="logarithmicDepthBuffer: true;"
+            vr-mode-ui="enabled: false">
+            
+            <!-- Marker-based AR for precise positioning -->
+            <a-marker type="pattern" url="https://raw.githack.com/AR-js-org/AR.js/master/aframe/examples/image-tracking/nft/trex/trex-pattern/pat-ttrex.patt"
+                      emitevents="true" 
+                      cursor="fuse: false; rayOrigin: mouse;">
+                <a-entity id="model-entity" 
+                          position="0 0 0" 
+                          scale="1 1 1"
+                          shadow="cast: true; receive: true">
+                </a-entity>
+            </a-marker>
+            
+            <!-- Fallback for markerless AR -->
+            <a-entity id="model-entity-markerless" 
+                      position="0 0 -5" 
+                      scale="1 1 1"
+                      visible="false"
+                      shadow="cast: true; receive: true">
+            </a-entity>
+            
+            <a-entity camera></a-entity>
+        </a-scene>
+    </div>
+
+    <script>
+        // DOM elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewPlaceholder = document.getElementById('previewPlaceholder');
+        const resetViewBtn = document.getElementById('resetView');
+        const viewInARBtn = document.getElementById('viewInAR');
+        const arViewer = document.getElementById('arViewer');
+        const closeARBtn = document.getElementById('closeAR');
+        const modelInfo = document.getElementById('modelInfo');
+        const modelName = document.getElementById('modelName').querySelector('span');
+        const modelSize = document.getElementById('modelSize').querySelector('span');
+        const modelType = document.getElementById('modelType').querySelector('span');
+        const modelDimensions = document.getElementById('modelDimensions').querySelector('span');
+        const conversionStatus = document.getElementById('conversionStatus');
+        const statusMessage = document.getElementById('statusMessage');
+        const conversionProgress = document.getElementById('conversionProgress');
+        const scaleSlider = document.getElementById('scaleSlider');
+        const scaleValue = document.getElementById('scaleValue');
+        const arScaleDown = document.getElementById('arScaleDown');
+        const arScaleReset = document.getElementById('arScaleReset');
+        const arScaleUp = document.getElementById('arScaleUp');
+
+        // Three.js variables
+        let scene, camera, renderer, controls, model;
+        let currentModelUrl = '';
+        let currentModelType = '';
+        let modelBoundingBox = new THREE.Box3();
+        let modelSizeVec = new THREE.Vector3();
+        let arScale = 1.0;
+        let currentARModel = null;
+
+        // Initialize Three.js scene
+        function initThreeJS() {
+            // Create scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a2e);
+            
+            // Create camera
+            camera = new THREE.PerspectiveCamera(75, previewContainer.clientWidth / previewContainer.clientHeight, 0.1, 1000);
+            camera.position.z = 5;
+            
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(previewContainer.clientWidth, previewContainer.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 10, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+            
+            const pointLight = new THREE.PointLight(0xffffff, 0.5);
+            pointLight.position.set(-10, -10, -5);
+            scene.add(pointLight);
+            
+            // Add a grid helper with 1m squares
+            const gridHelper = new THREE.GridHelper(11, 11);
+            scene.add(gridHelper);
+            
+            // Add orbit controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            
+            // Add renderer to container
+            previewContainer.appendChild(renderer.domElement);
+            
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function onWindowResize() {
+            camera.aspect = previewContainer.clientWidth / previewContainer.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(previewContainer.clientWidth, previewContainer.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Calculate scale factor for 11m optimization
+        function calculateScaleFactor(box) {
+            const size = new THREE.Vector3();
+            box.getSize(size);
+            
+            // Find the largest dimension
+            const maxDimension = Math.max(size.x, size.y, size.z);
+            
+            // Scale to fit within 11 meters
+            const targetSize = 11; // 11 meters
+            return targetSize / maxDimension;
+        }
+
+        // Load 3D model based on file type
+        function loadModel(file, fileExtension) {
+            // Remove existing model
+            if (model) {
+                scene.remove(model);
+            }
+            
+            // Show processing status
+            conversionStatus.style.display = 'block';
+            conversionStatus.className = 'conversion-status status-processing';
+            statusMessage.textContent = `Loading ${fileExtension.toUpperCase()} file...`;
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const contents = e.target.result;
+                
+                // Simulate processing time
+                simulateProgress(() => {
+                    try {
+                        let loader;
+                        
+                        if (fileExtension === 'gltf' || fileExtension === 'glb') {
+                            loader = new THREE.GLTFLoader();
+                            const data = fileExtension === 'glb' ? contents : JSON.parse(contents);
+                            loader.parse(data, '', (gltf) => {
+                                model = gltf.scene;
+                                finishModelLoading();
+                            }, (error) => {
+                                console.error('Error loading GLTF:', error);
+                                handleLoadError('Failed to load GLTF model');
+                            });
+                        } else if (fileExtension === 'obj') {
+                            loader = new THREE.OBJLoader();
+                            const object = loader.parse(contents);
+                            model = object;
+                            finishModelLoading();
+                        } else if (fileExtension === 'stl') {
+                            loader = new THREE.STLLoader();
+                            const geometry = loader.parse(contents);
+                            const material = new THREE.MeshPhongMaterial({ 
+                                color: 0xaaaaaa, 
+                                specular: 0x111111, 
+                                shininess: 200 
+                            });
+                            model = new THREE.Mesh(geometry, material);
+                            finishModelLoading();
+                        } else {
+                            handleLoadError(`Unsupported file format: ${fileExtension}`);
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error parsing model:', error);
+                        handleLoadError('Error parsing the 3D model file');
+                    }
+                });
+            };
+            
+            if (fileExtension === 'glb') {
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.readAsText(file);
+            }
+        }
+
+        function finishModelLoading() {
+            scene.add(model);
+            
+            // Calculate bounding box and dimensions
+            modelBoundingBox.setFromObject(model);
+            modelBoundingBox.getSize(modelSizeVec);
+            
+            // Calculate scale for 11m optimization
+            const scaleFactor = calculateScaleFactor(modelBoundingBox);
+            model.scale.setScalar(scaleFactor);
+            
+            // Update bounding box after scaling
+            modelBoundingBox.setFromObject(model);
+            modelBoundingBox.getSize(modelSizeVec);
+            
+            // Center the model
+            const center = modelBoundingBox.getCenter(new THREE.Vector3());
+            model.position.sub(center);
+            
+            // Adjust camera to fit model
+            const maxDim = Math.max(modelSizeVec.x, modelSizeVec.y, modelSizeVec.z);
+            const fov = camera.fov * (Math.PI / 180);
+            let cameraZ = Math.abs(maxDim / Math.sin(fov / 2));
+            
+            cameraZ *= 1.5; // Add some padding
+            camera.position.z = cameraZ;
+            controls.update();
+            
+            // Update model info
+            modelDimensions.textContent = `${modelSizeVec.x.toFixed(2)}m × ${modelSizeVec.y.toFixed(2)}m × ${modelSizeVec.z.toFixed(2)}m`;
+            
+            // Update status
+            conversionStatus.className = 'conversion-status status-success';
+            statusMessage.textContent = 'Model loaded successfully!';
+            
+            // Store model info for AR
+            currentModelType = 'loaded';
+            
+            // Create object URL for AR
+            const blob = new Blob([fileInput.files[0]], { type: 'application/octet-stream' });
+            currentModelUrl = URL.createObjectURL(blob);
+        }
+
+        function handleLoadError(message) {
+            conversionStatus.className = 'conversion-status status-error';
+            statusMessage.textContent = message;
+            alert(message);
+        }
+
+        function simulateProgress(callback) {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 5;
+                conversionProgress.style.width = `${progress}%`;
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(callback, 300);
+                }
+            }, 50);
+        }
+
+        // Setup AR scene with model
+        function setupARScene() {
+            const modelEntity = document.getElementById('model-entity');
+            const modelEntityMarkerless = document.getElementById('model-entity-markerless');
+            
+            // Clear previous model
+            modelEntity.setAttribute('gltf-model', '');
+            modelEntity.innerHTML = '';
+            modelEntityMarkerless.setAttribute('gltf-model', '');
+            modelEntityMarkerless.innerHTML = '';
+            
+            // Get file extension
+            const file = fileInput.files[0];
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            
+            // Apply scale from slider
+            const scale = arScale;
+            
+            if (fileExtension === 'gltf' || fileExtension === 'glb') {
+                modelEntity.setAttribute('gltf-model', `url(${currentModelUrl})`);
+                modelEntity.setAttribute('scale', `${scale} ${scale} ${scale}`);
+                
+                modelEntityMarkerless.setAttribute('gltf-model', `url(${currentModelUrl})`);
+                modelEntityMarkerless.setAttribute('scale', `${scale} ${scale} ${scale}`);
+            } else {
+                // For non-GLTF formats, we would need to convert first
+                // In a real implementation, you would convert to GLTF on the server
+                alert('For optimal AR experience, please use GLTF or GLB format. Other formats may not display correctly in AR.');
+                return false;
+            }
+            
+            // Show markerless entity (fallback)
+            modelEntityMarkerless.setAttribute('visible', 'true');
+            
+            return true;
+        }
+
+        // Event listeners
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.background = 'rgba(255, 255, 255, 0.15)';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.background = '';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.background = '';
+            
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        resetViewBtn.addEventListener('click', () => {
+            controls.reset();
+        });
+
+        viewInARBtn.addEventListener('click', () => {
+            if (currentModelType === 'loaded') {
+                if (setupARScene()) {
+                    arViewer.style.display = 'block';
+                }
+            } else {
+                alert('Please upload and load a 3D model first.');
+            }
+        });
+
+        closeARBtn.addEventListener('click', () => {
+            arViewer.style.display = 'none';
+        });
+
+        scaleSlider.addEventListener('input', (e) => {
+            arScale = parseFloat(e.target.value);
+            scaleValue.textContent = `${arScale.toFixed(1)}x`;
+        });
+
+        arScaleDown.addEventListener('click', () => {
+            arScale = Math.max(0.1, arScale - 0.1);
+            scaleSlider.value = arScale;
+            scaleValue.textContent = `${arScale.toFixed(1)}x`;
+            updateARScale();
+        });
+
+        arScaleUp.addEventListener('click', () => {
+            arScale = Math.min(2.0, arScale + 0.1);
+            scaleSlider.value = arScale;
+            scaleValue.textContent = `${arScale.toFixed(1)}x`;
+            updateARScale();
+        });
+
+        arScaleReset.addEventListener('click', () => {
+            arScale = 1.0;
+            scaleSlider.value = arScale;
+            scaleValue.textContent = `${arScale.toFixed(1)}x`;
+            updateARScale();
+        });
+
+        function updateARScale() {
+            const modelEntity = document.getElementById('model-entity');
+            const modelEntityMarkerless = document.getElementById('model-entity-markerless');
+            
+            modelEntity.setAttribute('scale', `${arScale} ${arScale} ${arScale}`);
+            modelEntityMarkerless.setAttribute('scale', `${arScale} ${arScale} ${arScale}`);
+        }
+
+        // Handle file upload
+        function handleFile(file) {
+            // Get file extension
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            
+            // Check file type
+            const supportedFormats = ['gltf', 'glb', 'stl', 'obj'];
+            if (!supportedFormats.includes(fileExtension)) {
+                alert('Please upload a supported file format: .gltf, .glb, .stl, or .obj');
+                return;
+            }
+            
+            // Show model info
+            modelName.textContent = file.name;
+            modelSize.textContent = formatFileSize(file.size);
+            modelType.textContent = fileExtension.toUpperCase();
+            modelInfo.style.display = 'block';
+            
+            // Hide placeholder
+            previewPlaceholder.style.display = 'none';
+            
+            // Load the model directly
+            loadModel(file, fileExtension);
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Initialize the application
+        initThreeJS();
+        animate();
+    </script>
+</body>
+</html>
